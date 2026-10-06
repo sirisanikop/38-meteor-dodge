@@ -7,6 +7,7 @@ class Ship:
         self.rect = pygame.Rect(x-20, y-20, 40, 40)
         self.color = (80, 160, 240)
         self.trail = []
+        self.has_shield = False
 
     def move(self, keys, width, height):
         dx=dy=0
@@ -32,3 +33,11 @@ class Ship:
         pygame.draw.polygon(screen,self.color,pts)
         # engine glow
         pygame.draw.circle(screen,(255,180,60),(cx,cy+12),5)
+        # energy shield
+        if self.has_shield:
+            shield_r = 28
+            shield_surf = pygame.Surface((shield_r*2, shield_r*2), pygame.SRCALPHA)
+            pygame.draw.circle(shield_surf, (0, 200, 255, 60), (shield_r, shield_r), shield_r)
+            pygame.draw.circle(shield_surf, (0, 240, 255, 200), (shield_r, shield_r), shield_r, 2)
+            pygame.draw.circle(shield_surf, (180, 255, 255, 150), (shield_r, shield_r), shield_r - 4, 1)
+            screen.blit(shield_surf, (cx - shield_r, cy - shield_r))
