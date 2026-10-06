@@ -30,6 +30,9 @@ class GameEngine:
         self.timer=0
         self.spawn_interval=60
         self.score=0
+        self.survival_frames=0
+        self.streak_timer=0
+        self.multiplier=1
         self.game_over=False
         self.started=False
 
@@ -47,6 +50,11 @@ class GameEngine:
         if self.game_over or not self.started: return
         keys=pygame.key.get_pressed()
         self.ship.move(keys,WIDTH,HEIGHT)
+
+        self.survival_frames+=1
+        self.streak_timer+=1
+        self.multiplier=1+(self.streak_timer//(10*FPS))
+
         self.timer+=1
         if self.timer>=self.spawn_interval:
             self.meteors.append(Meteor(WIDTH))
@@ -92,13 +100,15 @@ class GameEngine:
                 if self.ship.has_shield:
                     self.ship.has_shield=False
                     collided_meteors.add(m)
+                    self.streak_timer=0
+                    self.multiplier=1
                 else:
                     self.game_over=True
                     break
         if collided_meteors:
             self.meteors=[m for m in self.meteors if m not in collided_meteors]
         self.meteors=[m for m in self.meteors if not m.off_screen(HEIGHT)]
-        self.score+=1
+        self.score+=self.multiplier
 
     def draw(self):
         self.screen.fill(BG)
@@ -108,8 +118,14 @@ class GameEngine:
         for m in self.meteors: m.draw(self.screen)
         for laser in self.lasers: laser.draw(self.screen)
         self.ship.draw(self.screen)
-        sc=self.font.render(f"Time: {self.score//60}s",True,(200,200,240))
+
+        time_sec=self.survival_frames//60
+        sc=self.font.render(f"Time: {time_sec}s  Score: {self.score}",True,(200,200,240))
         self.screen.blit(sc,(10,10))
+        mult_col=(255,215,0) if self.multiplier>1 else (180,180,220)
+        mult_txt=self.font.render(f"Multiplier: {self.multiplier}x",True,mult_col)
+        self.screen.blit(mult_txt,(10,38))
+
         if self.ship.has_shield:
             sh_txt=self.font.render("SHIELD: ACTIVE",True,(0,220,255))
             self.screen.blit(sh_txt,(WIDTH-sh_txt.get_width()-10,10))
@@ -121,9 +137,11 @@ class GameEngine:
             ov.fill((0,0,0,150))
             self.screen.blit(ov,(0,0))
             m=self.big_font.render("DESTROYED!",True,(220,80,60))
-            s=self.font.render(f"Survived {self.score//60}s | SPACE to Restart",True,(200,200,200))
-            self.screen.blit(m,(WIDTH//2-m.get_width()//2,HEIGHT//2-40))
-            self.screen.blit(s,(WIDTH//2-s.get_width()//2,HEIGHT//2+20))
+            s=self.font.render(f"Survived {time_sec}s | Score: {self.score}",True,(200,200,200))
+            rst=self.font.render("Press SPACE to Restart",True,(180,180,240))
+            self.screen.blit(m,(WIDTH//2-m.get_width()//2,HEIGHT//2-50))
+            self.screen.blit(s,(WIDTH//2-s.get_width()//2,HEIGHT//2))
+            self.screen.blit(rst,(WIDTH//2-rst.get_width()//2,HEIGHT//2+40))
         pygame.display.flip()
 
     def run(self):
