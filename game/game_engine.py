@@ -51,6 +51,7 @@ class GameEngine:
         for m in self.meteors: m.update()
         for laser in self.lasers: laser.update()
 
+        spawned_fragments=[]
         hit_lasers=set()
         hit_meteors=set()
         for laser in self.lasers:
@@ -58,10 +59,11 @@ class GameEngine:
                 if m not in hit_meteors and laser.collides(m):
                     hit_lasers.add(laser)
                     hit_meteors.add(m)
+                    spawned_fragments.extend(m.split())
                     break
 
         if hit_meteors:
-            self.meteors=[m for m in self.meteors if m not in hit_meteors]
+            self.meteors=[m for m in self.meteors if m not in hit_meteors]+spawned_fragments
         self.lasers=[l for l in self.lasers if l not in hit_lasers and not l.off_screen()]
 
         for m in self.meteors:
