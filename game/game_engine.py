@@ -2,6 +2,7 @@ import pygame
 import random
 from game.ship import Ship
 from game.meteor import Meteor
+from game.laser import Laser
 
 WIDTH,HEIGHT=700,520
 FPS=60
@@ -21,6 +22,7 @@ class GameEngine:
     def reset(self):
         self.ship=Ship(WIDTH//2,HEIGHT-80)
         self.meteors=[]
+        self.lasers=[]
         self.timer=0
         self.spawn_interval=60
         self.score=0
@@ -33,7 +35,8 @@ class GameEngine:
             if event.type==pygame.KEYDOWN:
                 if event.key==pygame.K_SPACE:
                     if self.game_over: self.reset()
-                    else: self.started=True
+                    elif not self.started: self.started=True
+                    else: self.lasers.append(Laser(self.ship.rect.centerx, self.ship.rect.top))
         return True
 
     def update(self):
@@ -45,8 +48,23 @@ class GameEngine:
             self.meteors.append(Meteor(WIDTH))
             self.timer=0
             self.spawn_interval=max(20,self.spawn_interval-0.3)
+        for m in self.meteors: m.update()
+        for laser in self.lasers: laser.update()
+
+        hit_lasers=set()
+        hit_meteors=set()
+        for laser in self.lasers:
+            for m in self.meteors:
+                if m not in hit_meteors and laser.collides(m):
+                    hit_lasers.add(laser)
+                    hit_meteors.add(m)
+                    break
+
+        if hit_meteors:
+            self.meteors=[m for m in self.meteors if m not in hit_meteors]
+        self.lasers=[l for l in self.lasers if l not in hit_lasers and not l.off_screen()]
+
         for m in self.meteors:
-            m.update()
             if m.collides(self.ship.rect):
                 self.game_over=True
         self.meteors=[m for m in self.meteors if not m.off_screen(HEIGHT)]
@@ -57,6 +75,7 @@ class GameEngine:
         for sx,sy,sr in self.stars:
             pygame.draw.circle(self.screen,(200,200,220),(sx,sy),sr)
         for m in self.meteors: m.draw(self.screen)
+        for laser in self.lasers: laser.draw(self.screen)
         self.ship.draw(self.screen)
         sc=self.font.render(f"Time: {self.score//60}s",True,(200,200,240))
         self.screen.blit(sc,(10,10))
